@@ -56,6 +56,28 @@ export const constantRoutes = [
   },
 
   {
+    path: '/content',
+    component: Layout,
+    redirect: '/content',
+    name: '媒质管理',
+    meta: { title: '媒质管理', icon: 'el-icon-s-help' },
+    children: [
+      {
+        path: 'work-order',
+        name: '工单列表',
+        component: () => import('@/views/content/work-order/index'),
+        meta: { title: '工单列表', icon: 'table' }
+      },
+      {
+        path: 'channel',
+        name: '频道列表',
+        component: () => import('@/views/content/channel/index'),
+        meta: { title: '频道列表', icon: 'tree' }
+      }
+    ]
+  },
+
+  {
     path: '/example',
     component: Layout,
     redirect: '/example/table',

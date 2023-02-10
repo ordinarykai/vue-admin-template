@@ -13,7 +13,7 @@
         <el-input
           ref="username"
           v-model="loginForm.username"
-          placeholder="Username"
+          placeholder="请输入用户名"
           name="username"
           type="text"
           tabindex="1"
@@ -30,7 +30,7 @@
           ref="password"
           v-model="loginForm.password"
           :type="passwordType"
-          placeholder="Password"
+          placeholder="请输入密码"
           name="password"
           tabindex="2"
           auto-complete="on"
@@ -39,6 +39,22 @@
         <span class="show-pwd" @click="showPwd">
           <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
         </span>
+      </el-form-item>
+
+      <!-- 图形验证码-->
+      <el-form-item prop="code">
+        <el-input
+          v-model="loginForm.code"
+          auto-complete="off"
+          placeholder="请输入验证码"
+          style="width: 63%"
+          @keyup.enter.native="handleLogin"
+        >
+          <svg-icon slot="prefix" icon-class="validCode" class="el-input__icon input-icon" />
+        </el-input>
+        <div class="login-code">
+          <img :src="loginForm.codeUrl" @click="getCode" class="login-code-img"/>
+        </div>
       </el-form-item>
 
       <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">Login</el-button>
@@ -54,20 +70,21 @@
 
 <script>
 import { validUsername } from '@/utils/validate'
+import { getCode } from '@/api/user'
 
 export default {
   name: 'Login',
   data() {
     const validateUsername = (rule, value, callback) => {
       if (!validUsername(value)) {
-        callback(new Error('Please enter the correct user name'))
+        callback(new Error('用户名不能为空'))
       } else {
         callback()
       }
     }
     const validatePassword = (rule, value, callback) => {
       if (value.length < 6) {
-        callback(new Error('The password can not be less than 6 digits'))
+        callback(new Error('密码最少6位字符'))
       } else {
         callback()
       }
@@ -75,7 +92,10 @@ export default {
     return {
       loginForm: {
         username: 'admin',
-        password: '111111'
+        password: 'iptv@admin2023',
+        code: '',
+        codeUrl: '',
+        uuid: ''
       },
       loginRules: {
         username: [{ required: true, trigger: 'blur', validator: validateUsername }],
@@ -94,6 +114,9 @@ export default {
       immediate: true
     }
   },
+  created() {
+    this.getCode()
+  },
   methods: {
     showPwd() {
       if (this.passwordType === 'password') {
@@ -105,7 +128,14 @@ export default {
         this.$refs.password.focus()
       })
     },
+    getCode() {
+      getCode().then(res => {
+        this.loginForm.codeUrl = 'data:image/png;base64,' + res.data.base64
+        this.loginForm.uuid = res.data.uuid
+      })
+    },
     handleLogin() {
+      console.log(this.loginForm)
       this.$refs.loginForm.validate(valid => {
         if (valid) {
           this.loading = true
@@ -232,6 +262,19 @@ $light_gray:#eee;
     color: $dark_gray;
     cursor: pointer;
     user-select: none;
+  }
+
+  .login-code {
+    width: 33%;
+    height: 38px;
+    float: right;
+    img {
+      cursor: pointer;
+      vertical-align: middle;
+    }
+  }
+  .login-code-img {
+    height: 38px;
   }
 }
 </style>

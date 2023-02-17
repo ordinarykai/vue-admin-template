@@ -1,4 +1,5 @@
 import router from './router'
+import { resetRouter } from './router'
 import store from './store'
 import { Message } from 'element-ui'
 import NProgress from 'nprogress' // progress bar
@@ -10,7 +11,7 @@ NProgress.configure({ showSpinner: false }) // NProgress Configuration
 
 const whiteList = ['/login'] // no redirect whitelist
 
-router.beforeEach(async(to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // start progress bar
   NProgress.start()
 
@@ -26,15 +27,25 @@ router.beforeEach(async(to, from, next) => {
       next({ path: '/' })
       NProgress.done()
     } else {
-      const hasGetUserInfo = store.getters.name
-      if (hasGetUserInfo) {
+
+    
+      const hasPermissions = store.getters.permissions
+
+      if (hasPermissions) {
         next()
       } else {
-        try {
-          // get user info
-          // await store.dispatch('user/getInfo')
 
-          next()
+        resetRouter()
+
+        try {
+          await store.dispatch('user/getMenuTree').then(accessRoutes => {
+            router.addRoutes([...accessRoutes, { path: '*', redirect: '/404', hidden: true }])
+            router.options.routes = router.options.routes.concat(accessRoutes)
+
+            store.dispatch('user/getInfo');
+
+            next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
+          })
         } catch (error) {
           // remove token and go to login page to re-login
           await store.dispatch('user/resetToken')

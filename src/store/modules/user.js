@@ -1,12 +1,14 @@
-import { login, logout, getInfo } from '@/api/user'
-import { getToken, setToken, removeToken } from '@/utils/auth'
+import { login, logout, getInfo, getMenuTree } from '@/api/user'
+import { getToken, setToken, removeToken, treeToList, setMenu } from '@/utils/auth'
 import { resetRouter } from '@/router'
+import router, { constantRoutes, dynamicRoutes } from '@/router'
 
 const getDefaultState = () => {
   return {
     token: getToken(),
     name: '',
-    avatar: ''
+    avatar: '',
+    permissions: ''
   }
 }
 
@@ -24,6 +26,9 @@ const mutations = {
   },
   SET_AVATAR: (state, avatar) => {
     state.avatar = avatar
+  },
+  SET_PERMISSIONS: (state, permissions) => {
+    state.permissions = permissions
   }
 }
 
@@ -54,11 +59,24 @@ const actions = {
           return reject('Verification failed, please Login again.')
         }
 
-        const { name, avatar } = data
+        const { username, avatar } = data
 
-        commit('SET_NAME', name)
+        commit('SET_NAME', username)
         commit('SET_AVATAR', avatar)
         resolve(data)
+      }).catch(error => {
+        reject(error)
+      })
+    })
+  },
+
+  getMenuTree({ commit, state }) {
+    return new Promise((resolve, reject) => {
+      getMenuTree(state.token).then(response => {
+        const userPermissionList = treeToList(response.data)
+        commit('SET_PERMISSIONS', userPermissionList)
+        const menuList = setMenu(dynamicRoutes, userPermissionList)
+        resolve(menuList)
       }).catch(error => {
         reject(error)
       })

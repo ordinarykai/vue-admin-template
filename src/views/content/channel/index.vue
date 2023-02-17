@@ -1,54 +1,63 @@
 <template>
   <div class="app-container">
 
+    <!-- 搜索栏 -->
     <div class="filter-container">
       <el-form :inline="true" label-width="80px">
         <el-form-item label="频道名称">
-          <el-input v-model="listQuery.channelName" placeholder="请输入频道名称" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
+          <el-input v-model="listQuery.channelName" placeholder="请输入频道名称" style="width: 200px;" class="filter-item"
+            @keyup.enter.native="handleFilter" />
         </el-form-item>
-        <el-button v-waves class="filter-item" type="primary" style="margin-left: 20px;" icon="el-icon-search" @click="handleFilter">
+        <el-button class="filter-item" type="primary" style="margin-left: 20px;" icon="el-icon-search"
+          @click="handleFilter">
           搜索
-        </el-button>
-        <el-button v-waves :loading="downloadLoading" class="filter-item" type="primary" icon="el-icon-download" @click="handleDownload">
-          导出
         </el-button>
       </el-form>
     </div>
 
-    <el-table
-      :key="tableKey"
-      v-loading="listLoading"
-      :data="list"
-      border
-      fit
-      highlight-current-row
-      style="width: 100%;"
-      @sort-change="sortChange"
-    >
+    <!-- table列表 -->
+    <el-table v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%;">
 
       <el-table-column prop="channelCode" label="频道Code" align="center"></el-table-column>
       <el-table-column prop="channelNumber" label="频道号" align="center"></el-table-column>
       <el-table-column prop="channelName" label="频道名称" align="center"></el-table-column>
-      <el-table-column prop="multiCastUrl" label="组播地址" align="center"></el-table-column>
-      <el-table-column prop="playUrl" label="单播地址" align="center"></el-table-column>
+      <el-table-column prop="multiCastUrl" label="组播地址" align="center" show-overflow-tooltip></el-table-column>
+      <el-table-column prop="playUrl" label="单播地址" align="center" show-overflow-tooltip></el-table-column>
       <el-table-column prop="categoryType" label="分类" align="center"></el-table-column>
-      <el-table-column prop="isEnable" label="上线/下线" align="center"></el-table-column>
-      <el-table-column prop="isSchedule" label="启用/关闭节目单" align="center"></el-table-column>
-      <el-table-column prop="isTimeShift" label="是否开启时移" align="center"></el-table-column>
-      <el-table-column prop="isPaid" label="是否收费" align="center"></el-table-column>
-      <el-table-column prop="isStaticState" label="是否静态化" align="center"></el-table-column>
+
+      <el-table-column prop="isEnable" label="上线/下线" align="center">
+        <template slot-scope="scope">
+          <el-switch v-model="scope.row.isEnable" :active-value="1" :inactive-value="0"
+            @change="updateEnable(scope.row)"></el-switch>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="isSchedule" label="启用/关闭节目单" align="center">
+        <template slot-scope="scope">
+          <el-switch v-model="scope.row.isSchedule" :active-value="1" :inactive-value="0"
+            @change="updateSchedule(scope.row)"></el-switch>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="isTimeShift" label="启用/关闭时移" align="center">
+        <template slot-scope="scope">
+          <el-switch v-model="scope.row.isTimeShift" :active-value="1" :inactive-value="0"
+            @change="updateTimeShift(scope.row)"></el-switch>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="isPaid" label="是否收费" :formatter="isPaidFormat" align="center"></el-table-column>
+      <el-table-column prop="isStaticState" label="是否静态化" :formatter="isStaticStateFormat"
+        align="center"></el-table-column>
+
       <el-table-column prop="createTime" label="创建时间" align="center"></el-table-column>
 
-      <el-table-column
-        fixed="right"
-        align="center"
-        width="150"
-        label="操作">
+      <el-table-column fixed="right" align="center" width="150" label="操作">
         <template slot-scope="{row}">
           <el-button type="primary" size="mini" @click="handleUpdate(row)">
             编辑
           </el-button>
-          <el-button v-if="row.status!='published'" size="mini" type="success" @click="handleModifyStatus(row,'published')">
+          <el-button type="success" size="mini" @click="jumpScheduleList(row)">
             详情
           </el-button>
         </template>
@@ -56,18 +65,49 @@
 
     </el-table>
 
-    <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
+    <!-- 分页组件 -->
+    <pagination v-show="total > 0" :total="total" :page.sync="listQuery.current" :limit.sync="listQuery.size"
+      @pagination="getList" />
 
+    <!-- 编辑/详情弹出框 -->
     <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
 
-      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="90px" style="width: 400px; margin-left:50px;">
+      <el-form ref="dataForm" :model="temp" label-position="left" label-width="90px"
+        style="width: 400px; margin-left:50px;">
 
         <el-form-item label="频道Code" prop="channelCode">
-          <el-input v-model="temp.channelCode" placeholder="请输入频道Code" />
+          <el-input v-model="temp.channelCode" :readonly="readonly" placeholder="请输入频道Code" />
         </el-form-item>
 
         <el-form-item label="频道名称" prop="channelName">
-          <el-input v-model="temp.channelName" placeholder="请输入频道名称" />
+          <el-input v-model="temp.channelName" :readonly="readonly" placeholder="请输入频道名称" />
+        </el-form-item>
+
+        <el-form-item label="频道号" prop="channelNumber">
+          <el-input v-model="temp.channelNumber" :readonly="readonly" placeholder="请输入频道号" />
+        </el-form-item>
+
+        <el-form-item label="是否收费" prop="isPaid">
+          <el-select v-model="temp.isPaid" :disabled="readonly" placeholder="请选择是否收费">
+            <el-option label="是" :value="1" />
+            <el-option label="否" :value="0" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="组播地址" prop="multiCastUrl">
+          <el-input v-model="temp.multiCastUrl" :readonly="readonly" placeholder="请输入组播地址" />
+        </el-form-item>
+
+        <el-form-item label="单播地址" prop="playUrl">
+          <el-input v-model="temp.playUrl" :readonly="readonly" placeholder="请输入单播地址" />
+        </el-form-item>
+
+        <el-form-item label="频道分类" prop="categoryType">
+          <el-checkbox-group v-model="temp.categoryType" :disabled="readonly">
+            <el-checkbox v-for="(item, index) in categoryTypeList " :key="item" :label="item">
+              {{ item }}
+            </el-checkbox>
+          </el-checkbox-group>
         </el-form-item>
 
       </el-form>
@@ -75,7 +115,7 @@
         <el-button @click="dialogFormVisible = false">
           取消
         </el-button>
-        <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()">
+        <el-button type="primary" @click="dialogStatus === 'update' ? updateData() : dialogFormVisible = false">
           确认
         </el-button>
       </div>
@@ -85,57 +125,22 @@
 </template>
 
 <script>
-import { page, list, get, update } from '@/api/channel'
-import waves from '@/directive/waves' // waves directive
-import { parseTime } from '@/utils'
-import Pagination from '@/components/Pagination' // secondary package based on el-pagination
-
-const calendarTypeOptions = [
-  { key: 'CN', display_name: 'China' },
-  { key: 'US', display_name: 'USA' },
-  { key: 'JP', display_name: 'Japan' },
-  { key: 'EU', display_name: 'Eurozone' }
-]
-
-// arr to obj, such as { CN : "China", US : "USA" }
-const calendarTypeKeyValue = calendarTypeOptions.reduce((acc, cur) => {
-  acc[cur.key] = cur.display_name
-  return acc
-}, {})
+import { page, update, updateEnable, updateSchedule, updateTimeShift } from '@/api/channel'
+import Pagination from '@/components/Pagination'
 
 export default {
-  name: 'ComplexTable',
+  name: 'Channel',
   components: { Pagination },
-  directives: { waves },
-  filters: {
-    statusFilter(status) {
-      const statusMap = {
-        published: 'success',
-        draft: 'info',
-        deleted: 'danger'
-      }
-      return statusMap[status]
-    },
-    typeFilter(type) {
-      return calendarTypeKeyValue[type]
-    }
-  },
   data() {
     return {
-      tableKey: 0,
       list: null,
       total: 0,
       listLoading: true,
       listQuery: {
         current: 1,
         size: 10,
-        channelName: undefined,
+        channelName: undefined
       },
-      importanceOptions: [1, 2, 3],
-      calendarTypeOptions,
-      sortOptions: [{ label: 'ID Ascending', key: '+id' }, { label: 'ID Descending', key: '-id' }],
-      statusOptions: ['published', 'draft', 'deleted'],
-      showReviewer: false,
       temp: {
         id: undefined,
         channelCode: undefined,
@@ -145,165 +150,90 @@ export default {
       dialogStatus: '',
       textMap: {
         update: '编辑',
-        create: 'Create'
+        detail: '详情'
       },
-      dialogPvVisible: false,
-      pvData: [],
-      rules: {
-        type: [{ required: true, message: 'type is required', trigger: 'change' }],
-        timestamp: [{ type: 'date', required: true, message: 'timestamp is required', trigger: 'change' }],
-        title: [{ required: true, message: 'title is required', trigger: 'blur' }]
-      },
-      downloadLoading: false
+      categoryTypeList: ['央视', '卫视', '特色', '本地', '高清'],
+      readonly: true
     }
   },
   created() {
     this.getList()
   },
   methods: {
-    getList() {
-      this.listLoading = true
-      page(this.listQuery).then(response => {
-        this.list = response.data.records
-        this.total = response.data.total
-
-        // Just to simulate the time of the request
-        setTimeout(() => {
-          this.listLoading = false
-        }, 1.5 * 1000)
-      })
-    },
     handleFilter() {
       this.listQuery.page = 1
       this.getList()
     },
-    handleModifyStatus(row, status) {
-      this.$message({
-        message: '操作Success',
-        type: 'success'
+    getList() {
+      this.listLoading = true
+      console.log(this.listQuery)
+      page(this.listQuery).then(response => {
+        this.list = response.data.records
+        this.total = response.data.total
+        this.listLoading = false
       })
-      row.status = status
     },
-    sortChange(data) {
-      const { prop, order } = data
-      if (prop === 'id') {
-        this.sortByID(order)
-      }
-    },
-    sortByID(order) {
-      if (order === 'ascending') {
-        this.listQuery.sort = '+id'
-      } else {
-        this.listQuery.sort = '-id'
-      }
-      this.handleFilter()
-    },
-    resetTemp() {
-      this.temp = {
-        id: undefined,
-        importance: 1,
-        remark: '',
-        timestamp: new Date(),
-        title: '',
-        status: 'published',
-        type: ''
-      }
-    },
-    handleCreate() {
-      this.resetTemp()
-      this.dialogStatus = 'create'
+    handleUpdate(row) {
+      this.temp = Object.assign({}, row)
+      this.temp.categoryType = row.categoryType != null ? row.categoryType.split(',') : []
+      this.dialogStatus = 'update'
+      this.readonly = false
       this.dialogFormVisible = true
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
       })
     },
-    createData() {
-      this.$refs['dataForm'].validate((valid) => {
-        if (valid) {
-          this.temp.id = parseInt(Math.random() * 100) + 1024 // mock a id
-          this.temp.author = 'vue-element-admin'
-          createArticle(this.temp).then(() => {
-            this.list.unshift(this.temp)
-            this.dialogFormVisible = false
-            this.$notify({
-              title: 'Success',
-              message: 'Created Successfully',
-              type: 'success',
-              duration: 2000
-            })
-          })
-        }
-      })
-    },
-    handleUpdate(row) {
-      this.temp = Object.assign({}, row) // copy obj
-      this.temp.timestamp = new Date(this.temp.timestamp)
-      this.dialogStatus = 'update'
+    handleDetail(row) {
+      this.temp = Object.assign({}, row)
+      this.temp.categoryType = row.categoryType != null ? row.categoryType.split(',') : []
+      this.dialogStatus = 'detail'
+      this.readonly = true
       this.dialogFormVisible = true
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
       })
     },
     updateData() {
-      this.$refs['dataForm'].validate((valid) => {
-        if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
-          updateArticle(tempData).then(() => {
-            const index = this.list.findIndex(v => v.id === this.temp.id)
-            this.list.splice(index, 1, this.temp)
-            this.dialogFormVisible = false
-            this.$notify({
-              title: 'Success',
-              message: 'Update Successfully',
-              type: 'success',
-              duration: 2000
-            })
-          })
+      let data = this.temp
+      data.categoryType = this.temp.categoryType.join(",")
+      update(data).then(response => {
+        this.dialogFormVisible = false
+        this.getList()
+      })
+    },
+    updateEnable(row) {
+      updateEnable({ 'id': row.id })
+    },
+    updateSchedule(row) {
+      updateSchedule({ 'id': row.id })
+    },
+    updateTimeShift(row) {
+      updateTimeShift({ 'id': row.id })
+    },
+    isPaidFormat(row, column) {
+      if (row.isPaid == 1) {
+        return '是'
+      } else {
+        return '否'
+      }
+    },
+    isStaticStateFormat(row, column) {
+      if (row.isStaticState == 1) {
+        return '是'
+      } else {
+        return '否'
+      }
+    },
+    jumpScheduleList(row) {
+      const now = new Date();
+      this.$router.push({
+        name: "节目单管理", query: {
+          channelName: row.channelName,
+          startDate: now.getFullYear() + 
+            ((now.getMonth() + 1 < 10) ? '0' + (now.getMonth() + 1) : now.getMonth() + 1) +
+            ((now.getDate() < 10) ? '0' + now.getDate() : now.getDate()) 
         }
       })
-    },
-    handleDelete(row, index) {
-      this.$notify({
-        title: 'Success',
-        message: 'Delete Successfully',
-        type: 'success',
-        duration: 2000
-      })
-      this.list.splice(index, 1)
-    },
-    handleFetchPv(pv) {
-      fetchPv(pv).then(response => {
-        this.pvData = response.data.pvData
-        this.dialogPvVisible = true
-      })
-    },
-    handleDownload() {
-      this.downloadLoading = true
-      import('@/vendor/Export2Excel').then(excel => {
-        const tHeader = ['timestamp', 'title', 'type', 'importance', 'status']
-        const filterVal = ['timestamp', 'title', 'type', 'importance', 'status']
-        const data = this.formatJson(filterVal)
-        excel.export_json_to_excel({
-          header: tHeader,
-          data,
-          filename: 'table-list'
-        })
-        this.downloadLoading = false
-      })
-    },
-    formatJson(filterVal) {
-      return this.list.map(v => filterVal.map(j => {
-        if (j === 'timestamp') {
-          return parseTime(v[j])
-        } else {
-          return v[j]
-        }
-      }))
-    },
-    getSortClass: function(key) {
-      const sort = this.listQuery.sort
-      return sort === `+${key}` ? 'ascending' : 'descending'
     }
   }
 }

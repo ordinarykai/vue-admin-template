@@ -32,26 +32,26 @@ export function update(data) {
   })
 }
 
-export function updateTimeShift(data) {
+export function updateTimeShift(params) {
   return request({
     url: '/system/channel/update-time-shift',
     method: 'post',
-    data
+    params
   })
 }
 
-export function updateSchedule(data) {
+export function updateSchedule(params) {
   return request({
     url: '/system/channel/update-schedule',
     method: 'post',
-    data
+    params
   })
 }
 
-export function updateEnable(data) {
+export function updateEnable(params) {
   return request({
     url: '/system/channel/update-enable',
     method: 'post',
-    data
+    params
   })
 }

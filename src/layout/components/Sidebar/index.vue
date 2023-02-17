@@ -31,7 +31,7 @@ export default {
       'sidebar'
     ]),
     routes() {
-      return this.$router.options.routes
+      return this.$router.options.routes.filter(route => route.path != '/')
     },
     activeMenu() {
       const route = this.$route
@@ -43,7 +43,8 @@ export default {
       return path
     },
     showLogo() {
-      return this.$store.state.settings.sidebarLogo
+      return true
+      // this.$store.state.settings.sidebarLogo
     },
     variables() {
       return variables

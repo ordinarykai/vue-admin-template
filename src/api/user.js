@@ -16,9 +16,9 @@ export function getCode(data) {
   })
 }
 
-export function getInfo() {
+export function getBaseInfo() {
   return request({
-    url: '/system/auth/get-user-info',
+    url: '/system/auth/base-info',
     method: 'get'
   })
 }

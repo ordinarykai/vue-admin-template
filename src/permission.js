@@ -28,23 +28,16 @@ router.beforeEach(async (to, from, next) => {
       NProgress.done()
     } else {
 
-    
-      const hasPermissions = store.getters.permissions
+      const hasName = store.getters.name
 
-      if (hasPermissions) {
+      if (hasName) {
         next()
       } else {
 
-        resetRouter()
-
         try {
-          await store.dispatch('user/getMenuTree').then(accessRoutes => {
-            router.addRoutes([...accessRoutes, { path: '*', redirect: '/404', hidden: true }])
-            router.options.routes = router.options.routes.concat(accessRoutes)
-
-            store.dispatch('user/getInfo');
-
-            next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
+          await store.dispatch('user/getBaseInfo').then(() => {
+            // hack方法 确保addRoutes已完成
+            next({ ...to, replace: true })
           })
         } catch (error) {
           // remove token and go to login page to re-login

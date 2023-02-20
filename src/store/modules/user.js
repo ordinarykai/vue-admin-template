@@ -1,14 +1,12 @@
-import { login, logout, getInfo, getMenuTree } from '@/api/user'
-import { getToken, setToken, removeToken, treeToList, setMenu } from '@/utils/auth'
+import { login, logout, getBaseInfo } from '@/api/user'
+import { getToken, setToken, removeToken, setMenu } from '@/utils/auth'
 import { resetRouter } from '@/router'
-import router, { constantRoutes, dynamicRoutes } from '@/router'
+import router, { dynamicRoutes } from '@/router'
 
 const getDefaultState = () => {
   return {
     token: getToken(),
-    name: '',
-    avatar: '',
-    permissions: ''
+    name: ''
   }
 }
 
@@ -23,12 +21,6 @@ const mutations = {
   },
   SET_NAME: (state, name) => {
     state.name = name
-  },
-  SET_AVATAR: (state, avatar) => {
-    state.avatar = avatar
-  },
-  SET_PERMISSIONS: (state, permissions) => {
-    state.permissions = permissions
   }
 }
 
@@ -37,11 +29,10 @@ const actions = {
   login({ commit }, userInfo) {
     const { username, password, uuid, code } = userInfo
     return new Promise((resolve, reject) => {
-      login({ username: username.trim(), password: password, uuid: uuid, code: code }).then(response => {
-        const { data } = response
-        commit('SET_NAME', data.username)
-        commit('SET_TOKEN', data.token)
-        setToken(data.token)
+      const reqVO = { username: username.trim(), password: password, uuid: uuid, code: code }
+      login(reqVO).then(response => {
+        commit('SET_TOKEN', response.data.token)
+        setToken(response.data.token)
         resolve()
       }).catch(error => {
         reject(error)
@@ -49,34 +40,19 @@ const actions = {
     })
   },
 
-  // get user info
-  getInfo({ commit, state }) {
+  getBaseInfo({ commit }) {
+    // 重置路由
+    resetRouter()
+    // 获取用户基本信息
     return new Promise((resolve, reject) => {
-      getInfo(state.token).then(response => {
-        const { data } = response
-
-        if (!data) {
-          return reject('Verification failed, please Login again.')
-        }
-
-        const { username, avatar } = data
-
-        commit('SET_NAME', username)
-        commit('SET_AVATAR', avatar)
-        resolve(data)
-      }).catch(error => {
-        reject(error)
-      })
-    })
-  },
-
-  getMenuTree({ commit, state }) {
-    return new Promise((resolve, reject) => {
-      getMenuTree(state.token).then(response => {
-        const userPermissionList = treeToList(response.data)
-        commit('SET_PERMISSIONS', userPermissionList)
-        const menuList = setMenu(dynamicRoutes, userPermissionList)
-        resolve(menuList)
+      getBaseInfo().then(response => {
+        // 存储用户账号
+        commit('SET_NAME', response.data.username)
+        // 添加用户权限-动态路由
+        const menuList = setMenu(dynamicRoutes, response.data.permissions)
+        router.addRoutes([...menuList, { path: '*', redirect: '/404', hidden: true }])
+        router.options.routes = router.options.routes.concat(menuList)
+        resolve()
       }).catch(error => {
         reject(error)
       })

@@ -4,7 +4,7 @@
       label-position="left">
 
       <div class="title-container">
-        <h3 class="title">直播元数据管理平台</h3>
+        <h3 class="title">ordinary-admin</h3>
       </div>
 
       <el-form-item prop="username">
@@ -111,7 +111,6 @@ export default {
       })
     },
     handleLogin() {
-      console.log(this.loginForm)
       this.$refs.loginForm.validate(valid => {
         if (valid) {
           this.loading = true

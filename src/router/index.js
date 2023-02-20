@@ -55,66 +55,38 @@ export const constantRoutes = [
     }]
   },
 
-  // 404 page must be placed at the end !!!
-  // { path: '*', redirect: '/404', hidden: true }
 ]
 
 export const dynamicRoutes = [
-  {
-    path: '/content',
-    component: Layout,
-    redirect: '/content',
-    name: '媒资管理',
-    meta: { title: '媒资管理' },
-    children: [
-      {
-        path: 'work-order',
-        name: '工单管理',
-        component: () => import('@/views/content/work-order/index'),
-        meta: { title: '工单管理' }
-      },
-      {
-        path: 'channel',
-        name: '频道管理',
-        component: () => import('@/views/content/channel/index'),
-        meta: { title: '频道管理' }
-      },
-      {
-        path: 'schedule',
-        name: '节目单管理',
-        component: () => import('@/views/content/schedule/index'),
-        meta: { title: '节目单管理' }
-      }
-    ]
-  },
+
   {
     path: '/system',
     component: Layout,
     redirect: '/system',
-    name: '系统管理',
+    name: 'system',
     meta: { title: '系统管理' },
     children: [
       {
         path: 'admin',
-        name: '用户管理',
+        name: 'admin',
         component: () => import('@/views/system/user/index'),
         meta: { title: '用户管理' }
       },
       {
         path: 'role',
-        name: '角色管理',
+        name: 'role',
         component: () => import('@/views/system/role/index'),
         meta: { title: '角色管理' }
       },
       {
         path: 'permission',
-        name: '菜单管理',
+        name: 'permission',
         component: () => import('@/views/system/permission/index'),
         meta: { title: '菜单管理' }
       },
       {
         path: 'log',
-        name: '日志管理',
+        name: 'log',
         component: () => import('@/views/system/log/index'),
         meta: { title: '日志管理' }
       }
